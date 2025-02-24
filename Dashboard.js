@@ -104,8 +104,14 @@ const Dashboard = () => {
 
             <div className="card">
                 <h2>Latest Readings</h2>
-                <canvas ref={tempChartRef}></canvas>
-                <canvas ref={humidityChartRef}></canvas>
+                <div className="charts-container">
+                    <div className="chart">
+                        <canvas ref={tempChartRef}></canvas>
+                    </div>
+                    <div className="chart">
+                        <canvas ref={humidityChartRef}></canvas>
+                    </div>
+                </div>
             </div>
 
             <div className="button-group">
