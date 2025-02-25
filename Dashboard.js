@@ -14,7 +14,7 @@ const Dashboard = () => {
         fetchLatestReadings();
     }, []);
 
-    // Fetch only the latest 10 readings for charts
+    // Fetch the latest reading
     const fetchLatestReadings = async () => {
         try {
             const auth = localStorage.getItem("auth");
@@ -27,47 +27,30 @@ const Dashboard = () => {
             }
 
             const data = await response.json();
-
-            // Ensure `data` is an array (API returns a single object)
-            const readingsArray = Array.isArray(data) ? data : [data];
-
-            setLatestReadings(readingsArray);
-            renderCharts(readingsArray);
+            setLatestReadings(data);
+            renderCharts(data);
         } catch (error) {
             console.error("Error fetching data:", error);
         }
     };
 
-    // Render the temperature & humidity charts
+    // Render the charts
     const renderCharts = (data) => {
-        if (!data || data.length === 0) {
-            console.warn("No data available for charts.");
-            return;
-        }
+        if (!data || data.length === 0) return;
 
-        // Extract readings
         const labels = data.map((entry) => entry.time);
         const tempData = data.map((entry) => entry.temperature);
         const humidityData = data.map((entry) => entry.humidity);
 
-        // Destroy existing charts if they exist
         if (window.tempChart instanceof Chart) window.tempChart.destroy();
         if (window.humidityChart instanceof Chart) window.humidityChart.destroy();
 
-        // Create new charts
         if (tempChartRef.current) {
             window.tempChart = new Chart(tempChartRef.current, {
                 type: "line",
                 data: {
                     labels,
-                    datasets: [
-                        {
-                            label: "Temperature (°C)",
-                            data: tempData,
-                            borderColor: "red",
-                            backgroundColor: "rgba(255, 0, 0, 0.2)",
-                        },
-                    ],
+                    datasets: [{ label: "Temperature (°C)", data: tempData, borderColor: "red", backgroundColor: "rgba(255, 0, 0, 0.2)" }]
                 },
             });
         }
@@ -77,14 +60,7 @@ const Dashboard = () => {
                 type: "line",
                 data: {
                     labels,
-                    datasets: [
-                        {
-                            label: "Humidity (%RH)",
-                            data: humidityData,
-                            borderColor: "blue",
-                            backgroundColor: "rgba(0, 0, 255, 0.2)",
-                        },
-                    ],
+                    datasets: [{ label: "Humidity (%RH)", data: humidityData, borderColor: "blue", backgroundColor: "rgba(0, 0, 255, 0.2)" }]
                 },
             });
         }
@@ -95,32 +71,62 @@ const Dashboard = () => {
         navigate("/");
     };
 
-    return (
-        <div className="container">
-            <nav className="navbar">
-                <h1>Temperature & Humidity Dashboard</h1>
-                <button onClick={handleLogout} className="btn-danger">Logout</button>
-            </nav>
+    // Get latest readings
+    const latestReading = latestReadings.length > 0 ? latestReadings[0] : null;
+    const latestTemp = latestReading ? latestReading.temperature : "N/A";
+    const latestHumidity = latestReading ? latestReading.humidity : "N/A";
+    const lastUpdated = latestReading ? `${latestReading.date} at ${latestReading.time}` : "N/A";
 
-            <div className="card">
-                <h2>Latest Readings</h2>
-                <div className="charts-container">
-                    <div className="chart">
-                        <canvas ref={tempChartRef}></canvas>
+    // Determine temperature & humidity status
+    const tempStatus = latestTemp > 30 ? "Hot" : latestTemp < 18 ? "Cold" : "Normal";
+    const humidityStatus = latestHumidity > 50 ? "Wet" : "Normal";
+
+    return (
+        <div className="dashboard-container">
+            {/* Sidebar */}
+            <aside className="sidebar">
+                <h2>Advance Environitor</h2>
+                <nav>
+                    <button onClick={() => navigate("/history")}>📊 View Past Readings</button>
+                    <p className="menu-description">View history of temperature and humidity readings. Generate PDF or spreadsheet for data analysis report.</p>
+
+                    <button onClick={() => navigate("/settings")}>⚙️ Change Alert Levels</button>
+                    <p className="menu-description">Adjust values when you should be alert.</p>
+
+                    <button className="btn-danger" onClick={handleLogout}>🚪 Logout</button>
+                </nav>
+            </aside>
+
+            {/* Main Content */}
+            <div className="main-content">
+                <nav className="navbar">
+                    <h1>Advance Environitor</h1>
+                </nav>
+
+                <div className="card">
+                    <h2>Latest Readings</h2>
+
+                    {/* Numerical Values in Pill Boxes */}
+                    <div className="latest-values">
+                        <div className="reading-box">🌡️ {latestTemp}°C</div>
+                        <div className="reading-box">💧 {latestHumidity}% RH</div>
                     </div>
-                    <div className="chart">
-                        <canvas ref={humidityChartRef}></canvas>
+
+                    {/* Last Updated Info */}
+                    <div className="last-updated-box">Last updated: {lastUpdated}</div>
+
+                    {/* Charts */}
+                    <div className="charts-container">
+                        <div className="chart">
+                            <canvas ref={tempChartRef}></canvas>
+                            <p className="status-label">Status: {tempStatus}</p>
+                        </div>
+                        <div className="chart">
+                            <canvas ref={humidityChartRef}></canvas>
+                            <p className="status-label">Status: {humidityStatus}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div className="button-group">
-                <button className="btn-secondary" onClick={() => navigate("/history")}>
-                    View Past Readings
-                </button>
-                <button className="btn-secondary" onClick={() => navigate("/settings")}>
-                    Change Alert Levels
-                </button>
             </div>
         </div>
     );
